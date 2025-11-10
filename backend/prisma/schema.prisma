@@ -1,20 +1,39 @@
+// 1. Define the possible roles using an Enum for type safety
+enum Role {
+  STAFF
+  SUPERVISOR
+  ADMIN
+}
+
+
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider =  "sqlite"
-  url      = "file:./dev.db"
+  provider = "mysql"
+  url      = env("DATABASE_URL")
 }
 
+
+
+// 2. The Staff model will handle all roles (staff, supervisor, admin)
 model Staff {
   id           Int          @id @default(autoincrement())
   name         String       @unique
-  password     String
-  role         String
+  password     String       // WARNING: Still storing plaintext, HASHING IS HIGHLY RECOMMENDED
+  role         Role         @default(STAFF) // Use the Role enum
+  email        String       @unique
+  
+  // 3. Supervisor/Subordinate relationship
   supervisorId Int?
+  supervisor   Staff?       @relation("StaffHierarchy", fields: [supervisorId], references: [id], onDelete: SetNull)
+  subordinates Staff[]      @relation("StaffHierarchy")
+
   entries      WasteEntry[]
 }
+
+
 
 model WasteEntry {
   id        Int      @id @default(autoincrement())
@@ -22,6 +41,77 @@ model WasteEntry {
   category  String
   weight    Float
   date      DateTime @default(now())
-
   staff     Staff    @relation(fields: [staffId], references: [id])
 }
+
+
+
+
+// one to one schema
+
+
+// model User {
+//   id Int @id@default(autoincrement())
+//   email String @unique 
+//   profile Profile?
+
+// }
+
+// model Profile {
+//   id Int @id@default(autoincrement())
+//   bio String 
+//   profileid Int @unique
+//   user User @relation(fields: [profileid],references : [id])
+// }
+
+
+
+// const user = await prisma.user.findUnique({
+//   where : {email},
+//   include : {profile : true}
+// })
+
+// await prisma.user.findMany({
+//   where : {profile : {bio : {constians : "bublul"}}},
+//   orderBy : { id : "desc"},
+//   include : {profile : true}
+// })
+// await prisma .user.update({where : {userid : 1}},
+// data : {})
+
+// await prisma.user.findMany({
+//   where:{
+//     profile : {
+//       some :{ 
+//         published : true 
+//       }
+//     }
+//   }
+// })
+
+// await prisma.user.findMany({
+//   where : {
+//     posts : {
+
+//     }
+//   }
+// })
+
+
+// //one to many 
+
+// model User{
+//   id Int @id@default(autoincrement())
+//   email String @unique
+//   posts Post[]
+// }
+
+// model Post{
+//    id       Int   @id @default(autoincrement())
+//   title    String
+//   authorid  Int
+//   author User @relation(fields: [authorid],references: [id])
+// }
+
+
+
